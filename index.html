@@ -3,128 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soapayuca Academy V14 - Total Control</title>
+    <title>Soapayuca Industrial OS V15</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Nunito:wght@400;900&display=swap');
         body { margin: 0; overflow: hidden; background: #1a1a1a; color: #4af626; font-family: 'Nunito', sans-serif; }
-        .canvas { height: 60vh; position: relative; overflow: hidden; background: #222; border-bottom: 4px solid #444; }
+        .canvas { height: 60vh; position: relative; overflow: hidden; background: #222; border-bottom: 4px solid #ff6b00; }
         .terminal { height: 40vh; background: #000; padding: 20px; font-family: 'Fira Code', monospace; overflow-y: auto; }
-        
-        /* Animación de los Coches */
-        .car-img { position: absolute; width: 350px; border-radius: 25px; border: 6px solid white; z-index: 100; animation: vroom 2.5s linear forwards; }
-        @keyframes vroom { from { left: -500px; } to { left: 110%; } }
-        
-        /* Letra de Guía Gigante */
-        .guide-char { position: absolute; font-size: 25vw; opacity: 0.1; color: white; font-weight: 900; pointer-events: none; }
-        
-        /* Efecto Cascada */
-        .waterfall { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(0, 210, 255, 0.2)); pointer-events: none; display: none; }
+        .industrial-img { position: absolute; width: 350px; border-radius: 20px; border: 5px solid #ff6b00; animation: move 2.5s linear forwards; z-index: 100; }
+        @keyframes move { from { left: -500px; } to { left: 110%; } }
+        .guide-char { position: absolute; font-size: 25vw; opacity: 0.1; color: #ff6b00; font-weight: 900; }
+        .smoke-effect { position: absolute; inset: 0; background: rgba(100, 100, 100, 0.3); display: none; pointer-events: none; }
     </style>
 </head>
 <body>
-    <!-- PANTALLA DE INICIO -->
-    <div id="login" class="fixed inset-0 bg-black z-[200] flex flex-col items-center justify-center text-center">
-        <h1 class="text-5xl font-black text-white mb-4 italic">SOAPAYUCA <span class="text-blue-500">ADVENTURE</span></h1>
-        <p class="text-gray-400 mb-8 text-xl">INGENIERO ANDRÉ: ACCESO AL SISTEMA</p>
-        <button onclick="iniciarSistema()" class="bg-orange-600 hover:bg-orange-50 text-white hover:text-orange-600 px-16 py-8 rounded-full font-black text-3xl transition-all animate-bounce shadow-2xl">INICIAR SESIÓN</button>
+    <!-- LOGIN BIOMÉTRICO INDUSTRIAL -->
+    <div id="login" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center">
+        <h1 class="text-4xl font-black text-white mb-4 italic">ECOSAVE MX <span class="text-orange-500">INDUSTRIAL</span></h1>
+        <div id="cam-box" class="hidden w-64 h-64 rounded-xl border-4 border-orange-500 overflow-hidden mb-6">
+            <video id="v" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
+        </div>
+        <button onclick="start()" class="bg-orange-500 text-white px-10 py-5 rounded-xl font-black text-2xl animate-pulse">AUTORIZAR INGENIERO</button>
     </div>
+    <canvas id="c" class="hidden"></canvas>
 
     <div class="canvas" id="canvas">
-        <div id="water" class="waterfall"></div>
+        <div id="smoke" class="smoke-effect"></div>
         <div id="guide" class="guide-char inset-0 flex items-center justify-center"></div>
-        <div id="visual-area" class="h-full flex flex-col items-center justify-center text-9xl transition-all">🤠</div>
+        <div id="visual-area" class="h-full flex items-center justify-center text-9xl">🏗️</div>
     </div>
 
     <div class="terminal" id="term">
-        <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-2">
-            <div class="text-yellow-400 font-black text-2xl" id="mission-title">CARGANDO ACADEMIA...</div>
-            <div class="text-white font-bold bg-green-900 px-3 py-1 rounded">XP: <span id="xp-points">0</span></div>
+        <div class="flex justify-between border-b border-orange-900 pb-2 mb-2">
+            <div class="text-orange-500 font-black text-2xl" id="mission">SISTEMA AMBIENTAL LISTO</div>
+            <div class="text-white font-bold bg-orange-900 px-4 py-1 rounded">PROYECTO: ECOSAVE MX</div>
         </div>
-        <div id="output" class="text-green-500 text-lg"></div>
+        <div id="output" class="text-gray-400"></div>
     </div>
 
     <script>
-        let xp = 0, currentTarget = "ANDRE", charIdx = 0;
-        const visual = document.getElementById('visual-area');
-        const water = document.getElementById('water');
-        
-        function hablar(m) { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(m); u.lang='es-MX'; u.rate=1; window.speechSynthesis.speak(u); }
-        function log(m) { const d = document.getElementById('output'); d.innerHTML = `<span class="text-blue-400">>></span> ${m}<br>${d.innerHTML}`; }
+        let stream, xp = 0, currentWord = "ASBESTO", charIdx = 0;
+        const log = (m) => { const d = document.getElementById('output'); d.innerHTML = `> ${m}<br>${d.innerHTML}`; };
+        function hablar(m) { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(m); u.lang='es-MX'; window.speechSynthesis.speak(u); }
 
-        function iniciarSistema() {
-            document.getElementById('login').style.display = 'none';
-            hablar("Ingeniero André, bienvenido a su academia en la Hacienda. Vamos a programar.");
-            nuevaMision();
+        async function start() {
+            if(!stream) {
+                stream = await navigator.mediaDevices.getUserMedia({video:true});
+                document.getElementById('v').srcObject = stream;
+                document.getElementById('cam-box').classList.remove('hidden');
+                hablar("Identificación requerida para manejo de residuos peligrosos.");
+            } else {
+                document.getElementById('login').style.display = 'none';
+                hablar("Acceso total concedido. Ingeniero André, inicie remediación de la Hacienda.");
+                newMission();
+            }
         }
 
-        function nuevaMision() {
-            const misiones = ["ANDRE", "CABALLO", "HONGO", "1234", "5678", "JETTA", "MAZDA", "BUICK", "PICKUP"];
-            currentTarget = misiones[Math.floor(Math.random() * misiones.length)];
+        function newMission() {
+            const list = ["ASBESTO", "GASES", "RESIDUOS", "QUITOSANO", "ECOSAVE", "ANDRE", "MAZDA", "JETTA"];
+            currentWord = list[Math.floor(Math.random()*list.length)];
             charIdx = 0;
-            document.getElementById('mission-title').innerText = `MISIÓN: ESCRIBE "${currentTarget}"`;
-            document.getElementById('guide').innerText = currentTarget[0];
-            hablar("Escribe la palabra o el número: " + currentTarget);
+            document.getElementById('mission').innerText = 'REMEDIACIÓN: ' + currentWord;
+            document.getElementById('guide').innerText = currentWord[0];
+            hablar("Procesando: " + currentWord);
         }
 
         window.addEventListener('keydown', (e) => {
-            const tecla = e.key.toUpperCase();
+            const k = e.key.toUpperCase();
             
-            // 1. LÓGICA DE APRENDIZAJE (Letras y Números)
-            if (tecla === currentTarget[charIdx] || e.key === currentTarget[charIdx]) {
+            // Lógica de Letras
+            if(k === currentWord[charIdx] || e.key === currentWord[charIdx]) {
                 charIdx++;
                 hablar(e.key);
-                if (charIdx >= currentTarget.length) {
-                    xp += 50;
-                    document.getElementById('xp-points').innerText = xp;
-                    hablar("¡Excelente trabajo Ingeniero!");
-                    log(`COMPLETADO: ${currentTarget} (+50 XP)`);
-                    nuevaMision();
+                if(charIdx >= currentWord.length) {
+                    hablar("¡Misión ecológica completada!");
+                    newMission();
                 } else {
-                    document.getElementById('guide').innerText = currentTarget[charIdx];
+                    document.getElementById('guide').innerText = currentWord[charIdx];
                 }
             }
 
-            // 2. COMANDOS DE LA HACIENDA (Toda la experiencia)
+            // COMANDOS INDUSTRIALES Y ECOLÓGICOS
+            if(k === 'A') { hablar("Remoción de asbesto detectada. Equipo de protección listo."); document.getElementById('visual-area').innerText = "🏗️⚠️"; }
+            if(k === 'G') { hablar("Gestión de gases refrigerantes. Activando succión molecular."); document.getElementById('visual-area').innerText = "💨🔋"; }
+            if(k === 'Q') { hablar("Aplicando Quitosano para limpieza de agua."); document.getElementById('visual-area').innerText = "🧪💧"; }
+            if(k === 'P') { hablar("Manejo de residuos peligrosos. Enviando a confinamiento."); document.getElementById('visual-area').innerText = "☢️📦"; }
             
-            // Los Coches de la familia
-            if (tecla === 'R') { hablar("la R de Ricardo el Jetta negro"); lanzarObjeto('jetta.jpg', '🚗'); }
-            if (tecla === 'K') { hablar("K de Kike Buick dorada"); lanzarObjeto('buick.jpg', '🚙'); }
-            if (tecla === 'T') { hablar("T de Tony de la pick up blanca"); lanzarObjeto('pickup.jpg', '🛻'); }
-            if (tecla === 'M') { hablar("M de Mazda de Mamá"); lanzarObjeto('mazda.jpg', '🏎️'); }
-            
-            // Aventuras y Rescates
-            if (tecla === 'D') { 
-                hablar("Rescatando dinosaurio de la cascada"); 
-                visual.innerText = "🦕💦"; 
-                water.style.display = 'block';
-                setTimeout(() => water.style.display = 'none', 3000);
-            }
-            if (tecla === 'S') { 
-                hablar("Preparando tu sopa favorita con fideos y verduras"); 
-                visual.innerText = "🥣"; 
-            }
-            if (tecla === 'V') { 
-                hablar("¡Arre vaquero! Galopando por Soapayuca"); 
-                visual.innerText = "🤠🐎"; 
-            }
-            if (e.code === 'Space') { 
-                hablar("¡Caballo a la fuente! Splash"); 
-                lanzarObjeto('', '🐴💦'); 
-            }
+            // COCHES Y AVENTURAS PREVIAS
+            if(k === 'R') { hablar("la R de Ricardo el Jetta negro"); showObj('jetta.jpg', '🚗'); }
+            if(k === 'K') { hablar("K de Kike Buick dorada"); showObj('buick.jpg', '🚙'); }
+            if(k === 'T') { hablar("T de Tony de la pick up blanca"); showObj('pickup.jpg', '🛻'); }
+            if(k === 'V') { hablar("¡Arre vaquero! Galopando por Soapayuca"); document.getElementById('visual-area').innerText = "🤠🐎"; }
+            if(k === 'D') { hablar("Rescatando dinosaurio de la cascada"); document.getElementById('visual-area').innerText = "🦕💦"; }
         });
 
-        function lanzarObjeto(src, emoji) {
-            const obj = document.createElement('div');
-            obj.className = 'car-img';
-            obj.style.top = Math.random() * 30 + 10 + '%';
-            if (src) {
-                obj.innerHTML = `<img src="${src}" style="width:100%" onerror="this.outerHTML='<span style=\'font-size:150px\'>${emoji}</span>'">`;
-            } else {
-                obj.innerHTML = `<span style="font-size:150px">${emoji}</span>`;
-            }
-            document.getElementById('canvas').appendChild(obj);
-            setTimeout(() => obj.remove(), 2600);
+        function showObj(src, emo) {
+            const img = document.createElement('div');
+            img.className = 'industrial-img';
+            img.style.top = '20%';
+            img.innerHTML = `<img src="${src}" style="width:100%" onerror="this.outerHTML='<span style=\'font-size:150px\'>${emo}</span>'">`;
+            document.getElementById('canvas').appendChild(img);
+            setTimeout(() => img.remove(), 2600);
         }
     </script>
 </body>
