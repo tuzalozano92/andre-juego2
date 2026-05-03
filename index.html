@@ -1,0 +1,161 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2869
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww28600\viewh16040\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <!DOCTYPE html>\
+<html lang="es">\
+<head>\
+    <meta charset="UTF-8">\
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\
+    <title>Soapayuca OS V12</title>\
+    <script src="https://cdn.tailwindcss.com"></script>\
+    <style>\
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Nunito:wght@400;900&display=swap');\
+        :root \{ --cursor-bg: #1e1e1e; --hacker-green: #4af626; --water-blue: #00d2ff; \}\
+        body \{ margin: 0; overflow: hidden; background-color: var(--cursor-bg); color: #d4d4d4; font-family: 'Nunito', sans-serif; \}\
+        .code-font \{ font-family: 'Fira Code', monospace; \}\
+        \
+        #app-container \{ display: flex; height: 100vh; width: 100vw; \}\
+        #sidebar \{ width: 70px; background-color: #252526; display: flex; flex-direction: column; align-items: center; padding-top: 20px; border-right: 1px solid #333; \}\
+        #game-panel \{ flex: 1; position: relative; background: #252526; overflow: hidden; display: flex; flex-direction: column; \}\
+        \
+        /* Efecto Agua / Cascada */\
+        .cascade \{ position: absolute; top: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent, rgba(0, 210, 255, 0.1)); pointer-events: none; \}\
+        \
+        .floating-item \{ position: absolute; font-size: 5rem; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); \}\
+        \
+        #terminal \{ height: 180px; background-color: #000; border-top: 2px solid #444; padding: 15px; \}\
+        .vroom-car \{ position: fixed; font-size: 15vw; z-index: 300; pointer-events: none; animation: move 2.5s linear forwards; \}\
+        @keyframes move \{ from \{ left: -50%; top: 40%; \} to \{ left: 120%; top: 45%; \} \}\
+    </style>\
+</head>\
+<body class="code-font">\
+\
+    <!-- LOGIN BIOM\'c9TRICO -->\
+    <div id="login-screen" class="fixed inset-0 bg-[#111] z-[9999] flex flex-col items-center justify-center">\
+        <h1 class="text-4xl font-black text-white mb-6">SOAPAYUCA <span class="text-blue-500">ADVENTURE</span></h1>\
+        <div id="cam-box" class="hidden w-64 h-64 rounded-full border-4 border-blue-500 overflow-hidden mb-6">\
+            <video id="login-v" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>\
+        </div>\
+        <div id="login-msg" class="text-blue-400 mb-4 uppercase font-bold">Presiona ENTER para Iniciar Misi\'f3n</div>\
+    </div>\
+    <canvas id="login-c" class="hidden"></canvas>\
+\
+    <div id="app-container">\
+        <div id="sidebar" class="text-2xl gap-8">\
+            <div title="Misi\'f3n Vaquero">\uc0\u55358 \u56608 </div><div title="Misi\'f3n Rescate">\u55358 \u56725 </div><div title="Misi\'f3n Sopa">\u55358 \u56675 </div>\
+        </div>\
+\
+        <div id="main-editor" class="flex-1 flex flex-col">\
+            <div id="game-panel">\
+                <div id="cascade-effect" class="cascade hidden"></div>\
+                <div id="action-canvas" class="flex-1 relative flex items-center justify-center">\
+                    <div id="center-display" class="text-8xl">\uc0\u55357 \u56960 </div>\
+                </div>\
+\
+                <div id="terminal">\
+                    <div id="mission-title" class="text-blue-400 font-black text-xl mb-2">> INGENIERO ANDR\'c9: SISTEMA LISTO</div>\
+                    <div id="mission-desc" class="text-white text-lg font-bold">Presiona una tecla para empezar la aventura...</div>\
+                    <div id="log-content" class="text-gray-600 text-xs mt-2"></div>\
+                </div>\
+            </div>\
+        </div>\
+    </div>\
+\
+    <script>\
+        let stream, xp = 0, currentMode = 'inicio';\
+        const log = (m) => \{ const c = document.getElementById('log-content'); c.innerHTML = `> $\{m\}<br>$\{c.innerHTML\}`; \};\
+        function hablar(m) \{ window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(m); u.lang='es-MX'; u.rate=1.1; window.speechSynthesis.speak(u); \}\
+\
+        window.addEventListener('keydown', async (e) => \{\
+            // LOGIN\
+            if(document.getElementById('login-screen').style.display !== 'none') \{\
+                if(e.key === 'Enter') \{\
+                    if(!stream) \{\
+                        stream = await navigator.mediaDevices.getUserMedia(\{video:true\});\
+                        document.getElementById('login-v').srcObject = stream;\
+                        document.getElementById('cam-box').classList.remove('hidden');\
+                        document.getElementById('login-msg').innerText = "VISTA DETECTADA. ENTER PARA FOTO.";\
+                    \} else \{\
+                        const v = document.getElementById('login-v'), c = document.getElementById('login-c');\
+                        c.width = v.videoWidth; c.height = v.videoHeight;\
+                        c.getContext('2d').drawImage(v, 0, 0);\
+                        const a = document.createElement('a'); a.href = c.toDataURL('image/jpeg'); a.download = 'Andre_Hero.jpg'; a.click();\
+                        document.getElementById('login-screen').style.display = 'none';\
+                        hablar("Bienvenido Ingeniero Andr\'e9. Soapayuca te necesita. Elige una misi\'f3n.");\
+                    \}\
+                \}\
+                return;\
+            \}\
+\
+            const k = e.key.toUpperCase();\
+\
+            // COCHES (Siempre activos)\
+            if(k === 'R') lanzarCoche('jetta.jpg', 'la R de Ricardo el Jetta negro');\
+            if(k === 'K') lanzarCoche('buick.jpg', 'K de Kike Buick dorada');\
+            if(k === 'T') lanzarCoche('pickup.jpg', 'T de Tony de la pick up blanca');\
+            if(k === 'M') lanzarCoche('mazda.jpg', 'M de Mazda de Mam\'e1');\
+\
+            // MISIONES ESPECIALES\
+            if(k === 'V') modoVaquero();\
+            if(k === 'D') modoDinosaurio();\
+            if(k === 'S') modoSopa();\
+            if(e.key === ' ') lanzarCaballito(); // Espacio para aventar caballo\
+        \});\
+\
+        function modoVaquero() \{\
+            currentMode = 'vaquero';\
+            document.getElementById('center-display').innerText = "\uc0\u55358 \u56608 ";\
+            document.getElementById('mission-title').innerText = "> MISI\'d3N: VAQUERO GALOPANDO";\
+            document.getElementById('mission-desc').innerText = "\'a1Arre! El vaquero est\'e1 cruzando la hacienda.";\
+            hablar("\'a1Arre vaquero! Vamos por la hacienda.");\
+        \}\
+\
+        function modoDinosaurio() \{\
+            currentMode = 'dino';\
+            document.getElementById('cascade-effect').classList.remove('hidden');\
+            document.getElementById('center-display').innerText = "\uc0\u55358 \u56725 ";\
+            document.getElementById('mission-title').innerText = "> MISI\'d3N: RESCATE EN LA CASCADA";\
+            document.getElementById('mission-desc').innerText = "\'a1Un dinosaurio en el r\'edo! Presiona [S] para nadar y salvarlo.";\
+            hablar("\'a1Un dinosaurio est\'e1 en la cascada! Vamos a rescatarlo nadando.");\
+        \}\
+\
+        function modoSopa() \{\
+            currentMode = 'sopa';\
+            document.getElementById('cascade-effect').classList.add('hidden');\
+            document.getElementById('center-display').innerText = "\uc0\u55358 \u56675 ";\
+            document.getElementById('mission-title').innerText = "> MISI\'d3N: LA SOPA DEL INGENIERO";\
+            document.getElementById('mission-desc').innerText = "Escribe: [P]ollo, [V]erdura o [F]ideo para cocinar.";\
+            hablar("Vamos a preparar tu sopa favorita. \'bfQu\'e9 le quieres poner?");\
+        \}\
+\
+        function lanzarCoche(img, msg) \{\
+            hablar(msg);\
+            const el = document.createElement('div'); el.className = 'vroom-car';\
+            el.innerHTML = `<img src="$\{img\}" style="width:300px; border-radius:30px; border:4px solid white;" onerror="this.outerHTML='\uc0\u55357 \u56983 \u55357 \u56488 '">`;\
+            document.getElementById('action-canvas').appendChild(el);\
+            setTimeout(() => el.remove(), 2500);\
+        \}\
+\
+        function lanzarCaballito() \{\
+            hablar("\'a1Caballo a la fuente!");\
+            const el = document.createElement('div'); el.className = 'floating-item';\
+            el.innerText = "\uc0\u55357 \u56372 "; el.style.left = "0%"; el.style.bottom = "10%";\
+            document.getElementById('action-canvas').appendChild(el);\
+            \
+            // Animaci\'f3n de par\'e1bola (salto a la fuente)\
+            setTimeout(() => \{\
+                el.style.left = "50%"; el.style.bottom = "50%"; el.style.transform = "rotate(360deg) scale(2)";\
+            \}, 50);\
+            setTimeout(() => \{\
+                el.innerText = "\uc0\u55357 \u56486 "; el.style.bottom = "20%";\
+                hablar("\'a1Splash!");\
+            \}, 1000);\
+            setTimeout(() => el.remove(), 2000);\
+        \}\
+    </script>\
+</body>\
+</html>}
