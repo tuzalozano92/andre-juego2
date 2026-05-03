@@ -1,172 +1,200 @@
+<!-- ========================================== -->
+<!-- INICIO DEL DOCUMENTO COMPLETO (COPIA DESDE AQUÍ) -->
+<!-- ========================================== -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Industrial OS - Ingeniero André V17</title>
+    <title>Soapayuca Industrial OS - Ingeniero André</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Nunito:wght@400;900&display=swap');
-        :root { --safety-orange: #ff6b00; --industrial-dark: #121212; }
+        :root { --safety-orange: #ff6b00; --sky-blue: #00d2ff; }
         body { margin: 0; overflow: hidden; background-color: #000; color: var(--safety-orange); font-family: 'Nunito', sans-serif; }
         
-        /* Contenedores Principales */
-        .viewport { height: 65vh; position: relative; overflow: hidden; background: var(--industrial-dark); border-bottom: 6px solid var(--safety-orange); }
-        .terminal { height: 35vh; background: #000; padding: 25px; font-family: 'Fira Code', monospace; overflow-y: auto; border-top: 2px solid #222; }
+        /* Contenedores */
+        .viewport { height: 65vh; position: relative; overflow: hidden; background: #121212; border-bottom: 6px solid var(--safety-orange); }
+        .terminal { height: 35vh; background: #000; padding: 25px; font-family: 'Fira Code', monospace; overflow-y: auto; }
         
-        /* Elementos de Interfaz */
-        .guide-overlay { position: absolute; font-size: 30vw; opacity: 0.15; color: var(--safety-orange); font-weight: 900; pointer-events: none; }
-        .industrial-popup { position: absolute; width: 380px; border-radius: 35px; border: 8px solid var(--safety-orange); z-index: 100; animation: vroom 2.8s linear forwards; box-shadow: 0 0 30px rgba(255,107,0,0.4); }
+        /* Elementos Visuales */
+        .guide-overlay { position: absolute; font-size: 25vw; opacity: 0.15; color: white; font-weight: 900; pointer-events: none; }
+        .popup-obj { position: absolute; width: 380px; border-radius: 35px; border: 8px solid white; z-index: 100; animation: vroom 2.8s linear forwards; box-shadow: 0 0 30px rgba(255,255,255,0.3); }
         @keyframes vroom { from { left: -500px; } to { left: 115%; } }
         
-        /* Efectos Visuales Especiales */
-        .hazard-overlay { position: absolute; inset: 0; pointer-events: none; display: none; }
-        .asbesto-smoke { background: rgba(100,100,100,0.4); animation: flicker 0.2s infinite; }
-        .water-cascade { background: linear-gradient(to bottom, transparent, rgba(0, 150, 255, 0.3)); }
-        @keyframes flicker { 0% { opacity: 0.3; } 50% { opacity: 0.5; } 100% { opacity: 0.3; } }
+        /* Efectos Ecosave */
+        .fx-layer { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 50; }
+        .smoke { background: rgba(100,100,100,0.4); animation: flicker 0.2s infinite; }
+        .water { background: linear-gradient(to bottom, transparent, rgba(0, 150, 255, 0.3)); }
+        @keyframes flicker { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA DE ACCESO BIOMÉTRICO (ECOSAVE SECURITY) -->
-    <div id="security-lock" class="fixed inset-0 bg-black z-[1000] flex flex-col items-center justify-center text-center">
-        <h1 class="text-6xl font-black text-white mb-2 italic">ECOSAVE <span class="text-orange-500">SYSTEMS</span></h1>
-        <p class="text-gray-500 font-bold mb-8 tracking-[0.3em]">INDUSTRIAL REMEDIATION DIVISION</p>
+    <!-- ========================================== -->
+    <!-- 1. PANTALLA DE ACCESO BIOMÉTRICO           -->
+    <!-- ========================================== -->
+    <div id="lock" class="fixed inset-0 bg-black z-[1000] flex flex-col items-center justify-center text-center p-4">
+        <h1 class="text-6xl font-black text-white mb-2 italic">SOAPAYUCA <span class="text-orange-500">OS</span></h1>
+        <p class="text-gray-500 font-bold mb-8 tracking-widest uppercase">División Industrial y Ecuestre</p>
         
-        <div id="scanner-box" class="hidden w-80 h-80 rounded-[3rem] border-8 border-orange-500 overflow-hidden mb-10 shadow-[0_0_80px_rgba(255,107,0,0.3)]">
+        <div id="cam-area" class="hidden w-72 h-72 rounded-full border-8 border-orange-500 overflow-hidden mb-10 shadow-[0_0_50px_rgba(255,107,0,0.4)]">
             <video id="webcam" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
         </div>
         
-        <p id="status-text" class="text-orange-400 text-2xl font-black animate-pulse mb-8 italic uppercase">Esperando Identificación del Ingeniero...</p>
+        <p id="auth-msg" class="text-orange-400 text-2xl font-black animate-pulse mb-8 italic uppercase">Esperando Identificación del Ingeniero...</p>
         
-        <button onclick="accessRequest()" class="bg-orange-600 hover:bg-white text-white hover:text-orange-600 px-16 py-8 rounded-2xl font-black text-3xl uppercase transition-all shadow-2xl active:scale-95">
-            Autorizar Ingeniero André
+        <button onclick="solicitarAcceso()" class="bg-orange-600 hover:bg-white text-white hover:text-orange-600 px-16 py-8 rounded-3xl font-black text-3xl uppercase transition-all shadow-2xl active:scale-95">
+            Identificar André
         </button>
     </div>
-    <canvas id="snapshot" class="hidden"></canvas>
+    <canvas id="pic" class="hidden"></canvas>
 
-    <!-- INTERFAZ DE COMANDO INDUSTRIAL -->
+    <!-- ========================================== -->
+    <!-- 2. INTERFAZ PRINCIPAL DEL JUEGO            -->
+    <!-- ========================================== -->
     <div class="flex flex-col h-screen">
+        
+        <!-- Pantalla de Visualización -->
         <div class="viewport" id="stage">
-            <div id="fx-layer" class="hazard-overlay"></div>
-            <div id="guide-letter" class="guide-overlay inset-0 flex items-center justify-center"></div>
-            <div id="main-icon" class="h-full flex items-center justify-center text-[15rem] drop-shadow-2xl">🤠</div>
+            <div id="fx" class="fx-layer"></div>
+            <div id="guide" class="guide-overlay inset-0 flex items-center justify-center"></div>
+            <div id="main-view" class="h-full flex items-center justify-center text-[15rem] drop-shadow-2xl transition-all">🤠</div>
         </div>
 
+        <!-- Consola de Comandos -->
         <div class="terminal">
             <div class="flex justify-between items-center border-b-4 border-orange-900 pb-4 mb-4">
                 <div class="flex flex-col">
-                    <span class="text-gray-600 text-xs font-bold uppercase tracking-widest">Estado de la Misión</span>
-                    <div id="current-task" class="text-orange-500 font-black text-4xl italic leading-none">STANDBY</div>
+                    <span class="text-gray-600 text-xs font-bold uppercase">Estado de la Misión</span>
+                    <div id="task" class="text-orange-500 font-black text-4xl italic">SISTEMA LISTO</div>
                 </div>
                 <div class="bg-orange-950 border-2 border-orange-500 px-8 py-4 rounded-2xl">
-                    <span class="text-white font-black text-3xl" id="xp-meter">0</span>
-                    <span class="text-orange-400 font-bold ml-2">PTS</span>
+                    <span class="text-white font-black text-3xl" id="xp">0</span>
+                    <span class="text-orange-400 font-bold ml-2">XP</span>
                 </div>
             </div>
-            <div id="event-log" class="text-gray-400 text-xl overflow-y-auto h-32"></div>
+            <div id="console" class="text-gray-400 text-xl italic h-32 overflow-y-auto"></div>
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- 3. LÓGICA Y CÓDIGO DE PROGRAMACIÓN         -->
+    <!-- ========================================== -->
     <script>
-        let videoStream, points = 0, currentTarget = "ANDRE", step = 0;
-        const mainIcon = document.getElementById('main-icon');
-        const fxLayer = document.getElementById('fx-layer');
-        const log = document.getElementById('event-log');
+        let stream, points = 0, target = "ANDRE", idx = 0;
+        const main = document.getElementById('main-view');
+        const fx = document.getElementById('fx');
+        const log = document.getElementById('console');
 
-        function speak(text) { window.speechSynthesis.cancel(); const msg = new SpeechSynthesisUtterance(text); msg.lang='es-MX'; msg.rate=0.9; window.speechSynthesis.speak(msg); }
-        function writeLog(text) { log.innerHTML = `<div class="mb-1 border-l-4 border-orange-700 pl-3"><span class="text-orange-800">[CMD]</span> ${text}</div>${log.innerHTML}`; }
+        // Funciones de audio y texto
+        function speak(t) { 
+            window.speechSynthesis.cancel(); 
+            const m = new SpeechSynthesisUtterance(t); 
+            m.lang='es-MX'; 
+            m.rate=1; 
+            window.speechSynthesis.speak(m); 
+        }
+        
+        function print(t) { 
+            log.innerHTML = `<span class="text-orange-600">></span> ${t}<br>${log.innerHTML}`; 
+        }
 
-        // --- SISTEMA DE ACCESO ---
-        async function accessRequest() {
-            if(!videoStream) {
-                videoStream = await navigator.mediaDevices.getUserMedia({video:true});
-                document.getElementById('webcam').srcObject = videoStream;
-                document.getElementById('scanner-box').classList.remove('hidden');
-                document.getElementById('status-text').innerText = "VISTA DETECTADA. ENTER PARA CAPTURA.";
-                speak("Ingeniero André, mire a la cámara para el acceso industrial.");
+        // Sistema de Cámara
+        async function solicitarAcceso() {
+            if(!stream) {
+                stream = await navigator.mediaDevices.getUserMedia({video:true});
+                document.getElementById('webcam').srcObject = stream;
+                document.getElementById('cam-area').classList.remove('hidden');
+                document.getElementById('auth-msg').innerText = "CÁMARA ACTIVADA. PRESIONA ENTER.";
+                speak("Mire a la cámara, Ingeniero André.");
             } else {
-                const video = document.getElementById('webcam'), canvas = document.getElementById('snapshot');
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                const downloader = document.createElement('a');
-                downloader.href = canvas.toDataURL('image/jpeg');
-                downloader.download = 'ID_INGENIERO_ANDRE.jpg';
-                downloader.click();
+                const video = document.getElementById('webcam'), c = document.getElementById('pic');
+                c.width = video.videoWidth; c.height = video.videoHeight;
+                c.getContext('2d').drawImage(video, 0, 0);
+                const d = document.createElement('a'); 
+                d.href = c.toDataURL('image/jpeg'); 
+                d.download = 'Ingeniero_Andre_Perfil.jpg'; 
+                d.click();
                 
-                document.getElementById('security-lock').classList.add('hidden');
-                speak("Acceso Concedido. Bienvenido al mando de ECOSAVE MX y Hacienda Soapayuca.");
-                nextGoal();
+                document.getElementById('lock').classList.add('hidden');
+                speak("Acceso concedido. Bienvenido a su mando central, Ingeniero.");
+                siguienteReto();
             }
         }
 
-        // --- LÓGICA DE LA ACADEMIA ---
-        function nextGoal() {
-            const missions = ["ASBESTO", "GASES", "RESIDUOS", "QUITOSANO", "ANDRE", "CABALLO", "JETTA", "MAZDA", "BUICK", "PICKUP", "SOPA", "1234"];
-            currentTarget = missions[Math.floor(Math.random() * missions.length)];
-            step = 0;
-            document.getElementById('current-task').innerText = currentTarget;
-            document.getElementById('guide-letter').innerText = currentTarget[0];
-            speak("Comando: " + currentTarget);
+        // Sistema de Misiones (Palabras y Números)
+        function siguienteReto() {
+            const m = ["ANDRE", "CABALLO", "ASBESTO", "GASES", "RESIDUOS", "QUITOSANO", "JETTA", "MAZDA", "BUICK", "PICKUP", "1234"];
+            target = m[Math.floor(Math.random() * m.length)];
+            idx = 0;
+            document.getElementById('task').innerText = target;
+            document.getElementById('guide').innerText = target[0];
+            speak("Comando solicitado: " + target);
         }
 
+        // Detectar Teclas
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !document.getElementById('security-lock').classList.contains('hidden')) {
-                accessRequest(); return;
+            // Permitir que la tecla Enter tome la foto
+            if (e.key === 'Enter' && !document.getElementById('lock').classList.contains('hidden')) { 
+                solicitarAcceso(); 
+                return; 
             }
+            
+            const k = e.key.toUpperCase();
 
-            const input = e.key.toUpperCase();
-
-            // 1. APRENDIZAJE DE TECLAS
-            if (input === currentTarget[step] || e.key === currentTarget[step]) {
-                step++;
+            // LÓGICA 1: Escribir la palabra de la misión
+            if (k === target[idx] || e.key === target[idx]) {
+                idx++; 
                 speak(e.key);
-                if (step >= currentTarget.length) {
-                    points += 100;
-                    document.getElementById('xp-meter').innerText = points;
-                    speak("¡Excelente trabajo, Ingeniero!");
-                    writeLog(`Misión ${currentTarget} completada (+100 PTS)`);
-                    nextGoal();
-                } else {
-                    document.getElementById('guide-letter').innerText = currentTarget[step];
+                if (idx >= target.length) {
+                    points += 100; 
+                    document.getElementById('xp').innerText = points;
+                    speak("¡Excelente trabajo, misión cumplida!"); 
+                    print(`MISIÓN [${target}] LOGRADA EXITOSAMENTE`); 
+                    siguienteReto();
+                } else { 
+                    document.getElementById('guide').innerText = target[idx]; 
                 }
             }
 
-            // 2. COMANDOS ECOLÓGICOS (ECOSAVE MX)
-            if (input === 'A') { speak("Remoción de Asbesto activada."); mainIcon.innerText = "🏗️⚠️"; runFX('asbesto-smoke'); }
-            if (input === 'G') { speak("Gestión de Gases Refrigerantes."); mainIcon.innerText = "💨🔋"; }
-            if (input === 'Q') { speak("Aplicando Quitosano. Agua purificada."); mainIcon.innerText = "🧪💧"; }
-            if (input === 'P') { speak("Control de Residuos Peligrosos."); mainIcon.innerText = "☢️📦"; }
+            // LÓGICA 2: Comandos Industriales ECOSAVE MX
+            if (k === 'A') { speak("Remoción de Asbesto en proceso."); main.innerText = "🏗️⚠️"; runFX('smoke'); }
+            if (k === 'G') { speak("Gestión de Gases Refrigerantes activada."); main.innerText = "💨🔋"; }
+            if (k === 'Q') { speak("Aplicando Quitosano. Agua purificada."); main.innerText = "🧪💧"; }
+            if (k === 'P') { speak("Residuos Peligrosos asegurados."); main.innerText = "☢️📦"; }
 
-            // 3. COMANDOS DE LA HACIENDA (SOAPAYUCA)
-            if (input === 'R') { speak("Ricardo, el Jetta negro."); launchObj('jetta.jpg', '🚗'); }
-            if (input === 'K') { speak("Kike, la Buick dorada."); launchObj('buick.jpg', '🚙'); }
-            if (input === 'T') { speak("Tony, la pick up blanca."); launchObj('pickup.jpg', '🛻'); }
-            if (input === 'M') { speak("Mazda de Mamá."); launchObj('mazda.jpg', '🏎️'); }
-            if (input === 'V') { speak("¡Arre vaquero! Galopando."); mainIcon.innerText = "🤠🐎"; }
-            if (input === 'D') { speak("Rescate de dinosaurio."); mainIcon.innerText = "🦕💦"; runFX('water-cascade'); }
-            if (input === 'S') { speak("Sopa lista, Ingeniero."); mainIcon.innerText = "🥣"; }
-            if (e.code === 'Space') { speak("¡Caballo a la fuente!"); launchObj('', '🐴💦'); }
+            // LÓGICA 3: Vehículos Familiares
+            if (k === 'R') { speak("Ricardo en su Jetta negro."); spawn('jetta.jpg', '🚗'); }
+            if (k === 'K') { speak("Kike en la Buick dorada."); spawn('buick.jpg', '🚙'); }
+            if (k === 'T') { speak("Tony en la pick up blanca."); spawn('pickup.jpg', '🛻'); }
+            if (k === 'M') { speak("Mamá en el Mazda."); spawn('mazda.jpg', '🏎️'); }
+            
+            // LÓGICA 4: Aventuras y Rutinas del Ingeniero
+            if (k === 'V') { speak("¡Arre vaquero! Paseo por la hacienda."); main.innerText = "🤠🐎"; }
+            if (k === 'D') { speak("Rescate de dinosaurio en la cascada."); main.innerText = "🦕💦"; runFX('water'); }
+            if (k === 'S') { speak("Su sopa favorita está servida, Ingeniero."); main.innerText = "🥣"; }
+            if (e.code === 'Space') { speak("¡Splash! Llevando al caballo a la fuente."); spawn('', '🐴💦'); }
         });
 
-        function runFX(type) {
-            fxLayer.className = `hazard-overlay ${type}`;
-            fxLayer.style.display = 'block';
-            setTimeout(() => fxLayer.style.display = 'none', 3000);
+        // Utilidades Visuales
+        function runFX(t) { 
+            fx.className = `fx-layer ${t}`; 
+            fx.style.display = 'block'; 
+            setTimeout(() => fx.style.display = 'none', 3000); 
         }
-
-        function launchObj(img, emoji) {
-            const obj = document.createElement('div');
-            obj.className = 'industrial-popup';
-            obj.style.top = (Math.random() * 40 + 10) + '%';
-            if (img) {
-                obj.innerHTML = `<img src="${img}" style="width:100%" onerror="this.outerHTML='<span style=\'font-size:200px\'>${emoji}</span>'">`;
-            } else {
-                obj.innerHTML = `<span style="font-size:200px">${emoji}</span>`;
-            }
-            document.getElementById('stage').appendChild(obj);
-            setTimeout(() => obj.remove(), 2800);
+        
+        function spawn(i, e) {
+            const o = document.createElement('div'); 
+            o.className = 'popup-obj';
+            o.style.top = (Math.random() * 40 + 10) + '%';
+            o.innerHTML = i ? `<img src="${i}" style="width:100%" onerror="this.outerHTML='<span style=\'font-size:200px\'>${e}</span>'">` : `<span style="font-size:200px">${e}</span>`;
+            document.getElementById('stage').appendChild(o);
+            setTimeout(() => o.remove(), 2800);
         }
     </script>
 </body>
 </html>
+<!-- ========================================== -->
+<!-- FIN DEL DOCUMENTO COMPLETO (HASTA AQUÍ)    -->
+<!-- ========================================== -->
